@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Portal de Consultas CIAL Alimentos & UPAGO</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Transición suave para Bottom Sheet en móvil */
+    .sheet-transition {
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+    }
+
+    /* Scrollbars delgadas y limpias */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-800 min-h-screen flex flex-col antialiased selection:bg-[#007a35] selection:text-white">
+
+  <!-- CABECERA PRINCIPAL RESPONSIVA -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs backdrop-blur-md bg-white/95">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between gap-3">
+      
+      <!-- LOGO CIAL CON SUBTÍTULO UPAGO -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="changeView('search')">
+        <div class="bg-gradient-to-br from-[#007a35] to-[#005a26] text-white font-extrabold text-lg sm:text-xl px-3 py-1.5 rounded-xl shadow-sm tracking-tight flex items-center gap-1.5">
+          <span>CiAL</span>
+          <span class="text-[10px] sm:text-xs font-normal opacity-85 px-1 py-0.5 bg-white/20 rounded">PAGOS</span>
+        </div>
+        <div class="hidden sm:block border-l border-slate-200 pl-3">
+          <p class="text-xs font-bold text-slate-900 leading-tight">Portal de Consultas CIAL Alimentos</p>
+          <p class="text-[11px] text-slate-400 font-medium">Recaudación y Trazabilidad en línea</p>
+        </div>
+      </div>
+
+      <!-- BOTONES Y ACCIONES DE CABECERA -->
+      <div class="flex items-center gap-2">
+        <button id="btn-back" class="hidden inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 text-xs sm:text-sm font-semibold px-3 sm:px-4 py-2 rounded-xl transition-all" onclick="changeView('search')">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>Nueva Búsqueda</span>
+        </button>
+
+        <div class="flex items-center gap-1.5 bg-emerald-50 text-emerald-800 text-[11px] font-bold px-2.5 py-1.5 rounded-xl border border-emerald-200/70">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span class="hidden md:inline">Servidor: </span>CIAL_PROD
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOAST NOTIFICACIONES TIPO APP -->
+  <div id="toast" class="hidden fixed bottom-5 sm:bottom-auto sm:top-5 left-4 right-4 sm:left-auto sm:right-6 max-w-md mx-auto z-50 flex items-center justify-between p-3.5 rounded-xl shadow-xl transition-all duration-300 border bg-white border-slate-200">
+    <div class="flex items-center gap-3">
+      <div id="toast-icon-box" class="p-2 rounded-lg bg-emerald-100 text-emerald-700">
+        <i data-lucide="check-circle" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <p id="toast-title" class="text-xs font-bold text-slate-900">Aviso</p>
+        <p id="toast-text" class="text-xs text-slate-600 font-medium">Mensaje informativo</p>
+      </div>
+    </div>
+    <button onclick="hideToast()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+      <i data-lucide="x" class="w-4 h-4"></i>
+    </button>
+  </div>
+
+  <!-- CONTENEDOR PRINCIPAL -->
+  <main class="flex-grow w-full max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+
+    <!-- ========================================================
+         VISTA 1: BÚSQUEDA (RUT / CÓDIGO / DOCUMENTO)
+         ======================================================== -->
+    <section id="view-search" class="max-w-xl mx-auto my-2 sm:my-6 transition-all duration-300">
+      
+      <!-- Card Central -->
+      <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-200/80 overflow-hidden">
+        
+        <!-- Cabecera de Búsqueda -->
+        <div class="p-6 sm:p-8 text-center bg-gradient-to-b from-slate-50 to-white border-b border-slate-100">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#007a35]/10 text-[#007a35] mb-3 shadow-inner">
+            <i data-lucide="search" class="w-7 h-7"></i>
+          </div>
+          <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">Consulta de Pagos y Facturas</h1>
+          <p class="text-xs sm:text-sm text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
+            Ingresa tu RUT de cliente o transportista para consultar el historial de pagos y documentos pendientes.
+          </p>
+        </div>
+
+        <!-- Selector de Tipo de Búsqueda (Tabs Táctiles) -->
+        <div class="p-4 sm:p-6 pb-0">
+          <div class="grid grid-cols-2 p-1 bg-slate-100 rounded-2xl gap-1">
+            <button id="tab-rut" type="button" onclick="setActiveTab('rut')" class="py-3 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-white text-[#007a35] shadow-xs">
+              <i data-lucide="user" class="w-4 h-4"></i>
+              <span>Por RUT / Código</span>
+            </button>
+            <button id="tab-doc" type="button" onclick="setActiveTab('document')" class="py-3 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span>Nº Documento</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Formulario -->
+        <form onsubmit="handleSearch(event)" class="p-4 sm:p-6 space-y-4 sm:space-y-5">
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label id="input-label" class="block text-xs font-bold text-slate-600 uppercase tracking-wider">
+                RUT del Cliente o ID Remoto
+              </label>
+              <span id="quick-tip" class="text-[11px] font-semibold text-[#007a35] cursor-pointer hover:underline" onclick="fillQuickDemo('17786044-1')">
+                Ej: 17786044-1
+              </span>
+            </div>
+
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <span id="input-icon"><i data-lucide="user" class="w-5 h-5"></i></span>
+              </div>
+              <input
+                id="search-input"
+                type="text"
+                placeholder="Ingresa RUT ej: 17.786.044-1 o 779728"
+                class="block w-full pl-11 pr-10 py-3.5 sm:py-4 bg-slate-50 hover:bg-white focus:bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#007a35] focus:border-[#007a35] text-base font-semibold text-slate-900 placeholder:text-slate-400 transition-all outline-none"
+                oninput="handleInputChange(this)"
+                autocomplete="off"
+                autocapitalize="off"
+              />
+              <button type="button" id="btn-clear-input" onclick="clearInput()" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                <i data-lucide="x-circle" class="w-5 h-5"></i>
+              </button>
+            </div>
+            <p id="input-help" class="text-[11px] sm:text-xs text-slate-400 mt-2">
+              Ingresa el RUT con o sin puntos y guión (ej: 17786044-1 o 77393795-8).
+            </p>
+          </div>
+
+          <!-- Sugerencias de prueba rápida -->
+          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/70 text-xs">
+            <p class="font-bold text-slate-600 mb-1.5 flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+              Prueba rápida con casos existentes:
+            </p>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" onclick="fillQuickDemo('17786044-1')" class="bg-white border border-slate-200 hover:border-[#007a35] px-2.5 py-1 rounded-lg font-medium text-slate-700 text-[11px] active:scale-95 transition-all">
+                RUT: 17786044-1 (TI Prod)
+              </button>
+              <button type="button" onclick="fillQuickDemo('77393795-8')" class="bg-white border border-slate-200 hover:border-[#007a35] px-2.5 py-1 rounded-lg font-medium text-slate-700 text-[11px] active:scale-95 transition-all">
+                RUT: 77393795-8 (Demo SpA)
+              </button>
+              <button type="button" onclick="fillDocDemo('49406955')" class="bg-white border border-slate-200 hover:border-[#007a35] px-2.5 py-1 rounded-lg font-medium text-slate-700 text-[11px] active:scale-95 transition-all">
+                Factura: 49406955
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-[#007a35] hover:bg-[#00632b] active:scale-[0.98] text-white py-3.5 sm:py-4 px-6 rounded-2xl font-bold text-sm sm:text-base tracking-wide transition-all shadow-lg shadow-emerald-900/15 flex items-center justify-center gap-2 cursor-pointer">
+            <i data-lucide="search" class="w-5 h-5"></i>
+            <span>Consultar Historial</span>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================================================
+         VISTA 2: DASHBOARD RESULTADOS (OPTIMIZADO MOBILE)
+         ======================================================== -->
+    <section id="view-dashboard" class="hidden space-y-4 sm:space-y-6">
+      
+      <!-- TARJETA CABECERA DE CLIENTE (MOBILE FIRST & DESKTOP) -->
+      <div class="bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-sm relative overflow-hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          
+          <div class="flex items-start sm:items-center gap-3 sm:gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-[#007a35]/10 text-[#007a35] flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 font-bold text-lg">
+              <i data-lucide="user-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 id="client-name" class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+                  FELIPE PASTENES
+                </h2>
+                <span id="client-badge" class="bg-emerald-100 text-emerald-800 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-md">
+                  Cliente Verificado
+                </span>
+              </div>
+              
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
+                <p>RUT: <strong id="client-rut" class="text-slate-800 font-mono-code font-bold">17.786.044-1</strong></p>
+                <p class="hidden sm:inline text-slate-300">•</p>
+                <p id="client-email-wrap" class="flex items-center gap-1">
+                  <i data-lucide="mail" class="w-3.5 h-3.5 text-slate-400"></i>
+                  <span id="client-email" class="text-slate-700">felipe.pastenes@gmail.com</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- BADGE ID REMOTO / CÓDIGO DE CLIENTE -->
+          <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 sm:px-4 sm:py-3 flex items-center justify-between sm:justify-end gap-3">
+            <div class="text-left sm:text-right">
+              <span class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">ID Remoto / Cód. Cliente</span>
+              <span id="client-remote-id" class="text-xs sm:text-sm font-bold text-slate-800 font-mono-code">779728</span>
+            </div>
+            <div class="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 shadow-xs">
+              <i data-lucide="hash" class="w-4 h-4"></i>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SELECTOR DE PESTAÑAS (SEGMENTED CONTROL EN MOBILE) -->
+      <!-- Esto evita tener que scrollear páginas infinitas de arriba a abajo -->
+      <div class="flex bg-slate-200/80 p-1 rounded-2xl gap-1">
+        <button id="subtab-paid" onclick="switchSectionTab('paid')" class="flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-[#007a35] shadow-xs">
+          <i data-lucide="check-circle" class="w-4 h-4"></i>
+          <span>Pagos Realizados</span>
+          <span id="badge-count-paid" class="ml-1 bg-emerald-100 text-[#007a35] text-[11px] font-extrabold px-2 py-0.5 rounded-full">2</span>
+        </button>
+
+        <button id="subtab-pending" onclick="switchSectionTab('pending')" class="flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900">
+          <i data-lucide="clock" class="w-4 h-4"></i>
+          <span>Facturas Pendientes</span>
+          <span id="badge-count-pending" class="ml-1 bg-slate-300 text-slate-700 text-[11px] font-extrabold px-2 py-0.5 rounded-full">0</span>
+        </button>
+      </div>
+
+      <!-- SECCIÓN 1: HISTORIAL DE PAGOS (CONTAINER) -->
+      <div id="section-paid-container" class="space-y-4">
+        
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <span>Historial de Pagos Conciliados</span>
+              <span class="text-xs font-normal text-slate-500">(Últimos movimientos)</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Toca cualquier pago para ver el detalle de facturas saldadas sin salir de la vista.</p>
+          </div>
+          
+          <button onclick="downloadExcelMock()" class="hidden sm:inline-flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs px-3 py-2 rounded-xl transition-all shadow-xs">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Exportar XLS</span>
+          </button>
+        </div>
+
+        <!-- MODO DESKTOP: TABLA ELEGANTE -->
+        <div class="hidden md:block bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                <th class="py-4 px-6">ID Transacción</th>
+                <th class="py-4 px-6">Fecha y Hora</th>
+                <th class="py-4 px-6">Monto Total</th>
+                <th class="py-4 px-6">Medio</th>
+                <th class="py-4 px-6">Forma</th>
+                <th class="py-4 px-6 text-center">Docs Rebajados</th>
+                <th class="py-4 px-6 text-right">Detalle</th>
+              </tr>
+            </thead>
+            <tbody id="desktop-paid-tbody" class="divide-y divide-slate-100 text-xs">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- MODO MOBILE: TARJETAS COMPACTAS BANCARIAS (Elimina el scroll roto) -->
+        <div id="mobile-paid-cards" class="md:hidden space-y-3">
+          <!-- Renderizado dinámico de cards -->
+        </div>
+
+      </div>
+
+      <!-- SECCIÓN 2: FACTURAS PENDIENTES POR PAGAR -->
+      <div id="section-pending-container" class="hidden space-y-4">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
+              <span>Documentos Pendientes de Pago</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Selecciona los documentos para saldar en línea mediante UPAGO.</p>
+          </div>
+
+          <!-- Filtro rápido en la cabecera -->
+          <div class="relative w-full sm:w-60">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input
+              type="text"
+              id="pending-search-input"
+              placeholder="Buscar por folio..."
+              oninput="handlePendingSearch(this.value)"
+              class="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#007a35]"
+            />
+          </div>
+        </div>
+
+        <!-- TABLA DESKTOP / CARDS MOBILE PENDIENTES -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+          
+          <!-- Desktop Table -->
+          <div class="hidden md:block overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-rose-50/60 border-b border-rose-100 text-[11px] font-extrabold text-rose-800 uppercase tracking-wider">
+                  <th class="py-4 px-6 w-12">
+                    <input
+                      id="checkbox-all-pending-desk"
+                      type="checkbox"
+                      onclick="toggleAllPendingSelection()"
+                      class="rounded text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+                    />
+                  </th>
+                  <th class="py-4 px-6">Descripción / Folio</th>
+                  <th class="py-4 px-6">Vencimiento</th>
+                  <th class="py-4 px-6 text-right">Monto a Pagar</th>
+                  <th class="py-4 px-6 text-center">Estado</th>
+                  <th class="py-4 px-6 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="desktop-pending-tbody" class="divide-y divide-slate-100 text-xs">
+                <!-- Inyectado dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile Cards List -->
+          <div id="mobile-pending-cards" class="md:hidden divide-y divide-slate-100">
+            <!-- Inyectado dinámicamente -->
+          </div>
+
+          <!-- Mensaje Empty State si no hay pendientes -->
+          <div id="pending-empty-state" class="hidden p-8 sm:p-12 text-center">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-3">
+              <i data-lucide="check-check" class="w-7 h-7"></i>
+            </div>
+            <h4 class="text-base font-extrabold text-slate-800">¡Al día! No hay registros pendientes</h4>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              No registras deudas ni facturas por pagar asociadas a este RUT o Código en el portal CIAL.
+            </p>
+          </div>
+
+          <!-- BARRA DE LIQUIDACIÓN FLOTANTE (DOCK DE PAGO) -->
+          <div id="pending-payment-dock" class="hidden bg-rose-50 p-4 sm:p-5 border-t border-rose-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+              <div class="p-2.5 rounded-xl bg-rose-100 text-rose-700">
+                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <p class="text-[11px] font-bold text-rose-700 uppercase tracking-wide">Selección para Liquidar</p>
+                <p class="text-sm font-black text-slate-900">
+                  <span id="dock-selected-count">0</span> seleccionadas • <span id="dock-selected-amount" class="text-rose-700">$0</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button onclick="clearPendingSelection()" class="w-1/2 sm:w-auto bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold px-3 py-2.5 rounded-xl text-xs transition-colors">
+                Limpiar
+              </button>
+              <button onclick="openPaymentModal()" class="w-1/2 sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-1.5">
+                <span>Pagar Selección</span>
+                <i data-lucide="credit-card" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================================
+         VISTA 3: TRAZABILIDAD DE DOCUMENTO ÚNICO
+         ======================================================== -->
+    <section id="view-doc-detail" class="hidden max-w-xl mx-auto my-4 transition-all duration-300">
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+        
+        <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 sm:p-6 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-white/10 rounded-xl text-emerald-400">
+              <i data-lucide="file-check" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <p class="text-[11px] uppercase tracking-wider text-slate-400 font-extrabold">Consulta de Documento</p>
+              <h3 id="doc-view-title" class="text-lg font-black tracking-tight">Factura Nº 49406955</h3>
+            </div>
+          </div>
+          <span id="doc-view-badge" class="text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            PAGADA
+          </span>
+        </div>
+
+        <div class="p-5 sm:p-6 space-y-4">
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+              <span class="text-slate-400 font-bold block mb-1">Monto Original</span>
+              <span id="doc-view-monto" class="text-base font-black text-slate-900">$289.413</span>
+            </div>
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+              <span class="text-slate-400 font-bold block mb-1">Fecha Vencimiento</span>
+              <span id="doc-view-venc" class="text-base font-bold text-slate-800">28-05-2026</span>
+            </div>
+          </div>
+
+          <div id="doc-view-paid-box" class="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 text-xs space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-emerald-800 font-bold">Estado de Recaudación:</span>
+              <span class="font-extrabold text-emerald-700">Conciliado 100%</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600">
+              <span>Transacción CIAL:</span>
+              <span class="font-mono-code font-bold text-slate-900" id="doc-view-tx">20260924135612312C779728</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600">
+              <span>Medio de Pago:</span>
+              <span class="font-bold text-slate-900">Floid / Pasarela UPAGO</span>
+            </div>
+          </div>
+
+          <button onclick="changeView('search')" class="w-full bg-slate-100 hover:bg-slate-200 active:scale-[0.98] text-slate-700 font-bold py-3.5 rounded-2xl text-xs transition-all">
+            Volver al Buscador
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================
+       MODAL: DETALLE DE ITEMS PAGADOS (CENTRADO EN DESKTOP Y MOBILE)
+       ======================================================== -->
+  <div id="tx-modal-overlay" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200 opacity-0" onclick="handleTxOverlayClick(event)">
+    
+    <div id="tx-modal-content" class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden transform transition-all duration-200 scale-95 opacity-0">
+      
+      <!-- Header del Modal -->
+      <div class="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-[#007a35] flex items-center justify-center font-bold shrink-0">
+            <i data-lucide="layers" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-extrabold text-slate-900 leading-snug">Documentos Rebajados</h3>
+            <p class="text-[11px] sm:text-xs text-slate-500 font-mono-code" id="sheet-tx-id">ID: 20260924135612312C779728</p>
+          </div>
+        </div>
+        
+        <button onclick="closeTxSheet()" class="p-2 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Resumen Financiero de la Transacción -->
+      <div class="px-5 py-3.5 sm:px-6 sm:py-4 bg-emerald-50/70 border-b border-emerald-100 flex items-center justify-between text-xs">
+        <div>
+          <span class="text-emerald-800 font-bold block text-[11px] uppercase tracking-wider">Total Pagado</span>
+          <span id="sheet-total-amount" class="text-base sm:text-lg font-black text-emerald-900">$586.362</span>
+        </div>
+        <div class="text-right">
+          <span class="text-emerald-800 font-bold block text-[11px] uppercase tracking-wider">Medio & Fecha</span>
+          <span id="sheet-meta" class="text-slate-700 font-semibold">Floid • 24-09-2026 10:56</span>
+        </div>
+      </div>
+
+      <!-- Contenido Scrollable Limpio -->
+      <div class="p-4 sm:p-6 overflow-y-auto space-y-3 flex-grow" id="sheet-items-container">
+        <!-- Inyectado dinámicamente con items estilizados -->
+      </div>
+
+      <!-- Footer del Modal -->
+      <div class="p-4 sm:px-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+        <span class="text-[11px] text-slate-500 text-center sm:text-left">Transacción conciliada automáticamente por CIAL.</span>
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button onclick="copyCurrentTxId()" class="w-1/2 sm:w-auto bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold px-3 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            <span>Copiar ID</span>
+          </button>
+          <button onclick="closeTxSheet()" class="w-1/2 sm:w-auto bg-[#007a35] hover:bg-[#00632b] text-white font-extrabold px-5 py-2.5 rounded-xl transition-all shadow-sm">
+            Entendido
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================================
+       MODAL: PASARELA DE PAGO UPAGO
+       ======================================================== -->
+  <div id="payment-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-100 transition-all">
+      <div class="bg-[#1070b8] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-white/10 rounded-xl">
+            <i data-lucide="shield-check" class="w-5 h-5 text-sky-200"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold">Pasarela Segura UPAGO</h3>
+            <p class="text-[11px] text-sky-100 font-medium">Recaudación CIAL Alimentos</p>
+          </div>
+        </div>
+        <button onclick="closePaymentModal()" class="text-white/80 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4 text-xs">
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
+          <div class="flex justify-between text-slate-600">
+            <span>Cliente:</span>
+            <span class="font-bold text-slate-900" id="modal-client-name">Felipe Pastenes</span>
+          </div>
+          <div class="flex justify-between text-slate-600">
+            <span>RUT:</span>
+            <span class="font-mono-code font-bold text-slate-900" id="modal-client-rut">17.786.044-1</span>
+          </div>
+          <div class="border-t border-slate-200 pt-2 flex justify-between text-sm font-black text-slate-900">
+            <span>Total a Liquidar:</span>
+            <span class="text-[#1070b8] text-base" id="modal-pay-amount">$0</span>
+          </div>
+        </div>
+
+        <div>
+          <p class="font-bold text-slate-600 mb-2 uppercase text-[10px] tracking-wider">Selecciona Método de Pago</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="border-2 border-[#1070b8] bg-sky-50/50 p-3 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer">
+              <span class="font-extrabold text-[#1070b8]">Floid</span>
+              <span class="text-[10px] text-slate-500">Transferencia Segura</span>
+            </label>
+            <label class="border border-slate-200 p-3 rounded-2xl flex flex-col items-center justify-center text-center opacity-50 cursor-not-allowed">
+              <span class="font-extrabold text-slate-700">Webpay Plus</span>
+              <span class="text-[10px] text-slate-400">Tarjetas Crédito/Débito</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button onclick="closePaymentModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-all">
+            Cancelar
+          </button>
+          <button onclick="executePaymentProcess()" class="bg-[#1070b8] hover:bg-[#0d5994] text-white font-extrabold py-3 rounded-xl shadow-md transition-all">
+            Pagar Ahora
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 py-6 px-4 sm:px-6 border-t border-slate-800 text-xs mt-auto">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+      <div class="flex items-center gap-2">
+        <span class="font-extrabold text-white text-sm">UPAGO</span>
+        <span class="text-slate-600">|</span>
+        <span class="text-slate-400">CIAL Alimentos Integrado © 2026</span>
+      </div>
+      <div class="flex items-center gap-4 text-[11px] font-medium text-slate-400">
+        <span>Soporte: Janus SpA</span>
+        <span>•</span>
+        <span>Certificación Segura SSL</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================
+       JAVASCRIPT / LÓGICA DE APLICACIÓN RESTAURADA Y COMPLETA
+       ======================================================== -->
+  <script>
+    // === BASE DE DATOS LOCAL CON CASOS REALES ===
+    const DATABASE = {
+      // Caso 1: RUT 17786044-1 (Felipe Pastenes de la implementación de TI)
+      "177860441": {
+        name: "FELIPE PASTENES",
+        rut: "17.786.044-1",
+        rutRaw: "177860441",
+        remoteId: "779728",
+        email: "felipe.pastenes@gmail.com",
+        transactions: [
+          {
+            id: "20260924135612312C779728",
+            date: "24-09-2026 10:56",
+            amount: 586362,
+            gateway: "Floid",
+            method: "Manual",
+            itemsCount: 2,
+            items: [
+              {
+                concept: "CREDITO CONSUMO",
+                account: "CREDITO 4547060",
+                deuda: "Cuota Mes (3)",
+                total: 298181,
+                adeudado: 0,
+                venc: "15-09-2026",
+                pagado: 298181,
+                docNum: "4547060-03"
+              },
+              {
+                concept: "CREDITO CONSUMO",
+                account: "CREDITO 4547061",
+                deuda: "Cuota Mes (2)",
+                total: 288181,
+                adeudado: 0,
+                venc: "01-09-2026",
+                pagado: 288181,
+                docNum: "4547061-02"
+              }
+            ]
+          },
+          {
+            id: "20260924135448305C779728",
+            date: "24-09-2026 10:55",
+            amount: 298641,
+            gateway: "Floid",
+            method: "Manual",
+            itemsCount: 1,
+            items: [
+              {
+                concept: "CREDITO CONSUMO",
+                account: "CREDITO 4547059",
+                deuda: "Cuota Mes (1)",
+                total: 298641,
+                adeudado: 0,
+                venc: "01-08-2026",
+                pagado: 298641,
+                docNum: "4547059-01"
+              }
+            ]
+          }
+        ],
+        pending: [] // Sin registros pendientes
+      },
+
+      // Caso 2: RUT 77393795-8 / ID 1196197 (Moustache Beams SpA)
+      "773937958": {
+        name: "MOUSTACHE BEAMS SPA",
+        rut: "77.393.795-8",
+        rutRaw: "773937958",
+        remoteId: "1196197",
+        email: "isaac@rappi.com",
+        transactions: [
+          {
+            id: "20260530132019491C2717026",
+            date: "30-05-2026 09:20",
+            amount: 3322121,
+            gateway: "UMach",
+            method: "Manual",
+            itemsCount: 6,
+            items: [
+              { concept: "FACTURACION", account: "Factura", deuda: "49406955", total: 289413, adeudado: 0, venc: "28-05-2026", pagado: 289413, docNum: "49406955" },
+              { concept: "FACTURACION", account: "Factura", deuda: "49414229", total: 201377, adeudado: 0, venc: "29-05-2026", pagado: 201377, docNum: "49414229" },
+              { concept: "FACTURACION", account: "Factura", deuda: "49423338", total: 323988, adeudado: 0, venc: "30-05-2026", pagado: 323988, docNum: "49423338" },
+              { concept: "FACTURACION", account: "Factura", deuda: "49421415", total: 426873, adeudado: 0, venc: "30-05-2026", pagado: 426873, docNum: "49421415" },
+              { concept: "FACTURACION", account: "Factura", deuda: "49406951", total: 148473, adeudado: 0, venc: "28-05-2026", pagado: 148473, docNum: "49406951" },
+              { concept: "FACTURACION", account: "Factura", deuda: "49415217", total: 17432,  adeudado: 0, venc: "29-05-2026", pagado: 17432,  docNum: "49415217" }
+            ]
+          }
+        ],
+        pending: [
+          { id: "49662864", desc: "Factura 49662864", venc: "01-07-2026", amount: 96322 },
+          { id: "49662869", desc: "Factura 49662869", venc: "01-07-2026", amount: 137418 },
+          { id: "49662866", desc: "Factura 49662866", venc: "01-07-2026", amount: 105989 },
+          { id: "49662870", desc: "Factura 49662870", venc: "05-07-2026", amount: 85400 }
+        ]
+      }
+    };
+
+    // Alias directos para buscar por ID Remoto numérico
+    DATABASE["779728"] = DATABASE["177860441"];
+    DATABASE["1196197"] = DATABASE["773937958"];
+
+    // ESTADO DE LA APP
+    let currentSearchType = 'rut'; // 'rut' | 'document'
+    let currentClient = null;
+    let selectedPendingIds = [];
+    let currentTxInSheet = null;
+    let toastTimeout = null;
+
+    // UTILERÍA: Formateador Moneda CLP
+    function formatCLP(val) {
+      return new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        maximumFractionDigits: 0
+      }).format(val);
+    }
+
+    // FORMATEO INTELIGENTE DE RUT O CÓDIGO
+    function formatRut(val) {
+      let clean = val.replace(/[^0-9kK]/g, '');
+      if (clean.length <= 1) return clean;
+      let body = clean.slice(0, -1);
+      let dv = clean.slice(-1).toUpperCase();
+      let formattedBody = body.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      return `${formattedBody}-${dv}`;
+    }
+
+    function handleInputChange(input) {
+      const clearBtn = document.getElementById('btn-clear-input');
+      clearBtn.classList.toggle('hidden', input.value.trim() === '');
+      
+      if (currentSearchType === 'rut') {
+        let raw = input.value.replace(/[^0-9kK]/g, '');
+        if (raw.length <= 7 && !raw.includes('k') && !raw.includes('K') && !input.value.includes('-')) {
+          return;
+        }
+        if (raw.length >= 8) {
+          input.value = formatRut(raw);
+        }
+      }
+    }
+
+    function clearInput() {
+      const input = document.getElementById('search-input');
+      input.value = '';
+      document.getElementById('btn-clear-input').classList.add('hidden');
+      input.focus();
+    }
+
+    function setActiveTab(tab) {
+      currentSearchType = tab;
+      const tabRut = document.getElementById('tab-rut');
+      const tabDoc = document.getElementById('tab-doc');
+      const label = document.getElementById('input-label');
+      const input = document.getElementById('search-input');
+      const help = document.getElementById('input-help');
+      const icon = document.getElementById('input-icon');
+      const tip = document.getElementById('quick-tip');
+
+      input.value = '';
+      document.getElementById('btn-clear-input').classList.add('hidden');
+
+      if (tab === 'rut') {
+        tabRut.className = "py-3 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-white text-[#007a35] shadow-xs";
+        tabDoc.className = "py-3 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+        label.textContent = "RUT del Cliente o ID Remoto";
+        input.placeholder = "Ingresa RUT ej: 17.786.044-1 o Cód: 779728";
+        help.textContent = "Ingresa el RUT con o sin puntos y guión (ej: 17786044-1 o 77393795-8).";
+        tip.textContent = "Ej: 17786044-1";
+        tip.onclick = () => fillQuickDemo('17786044-1');
+        icon.innerHTML = `<i data-lucide="user" class="w-5 h-5"></i>`;
+      } else {
+        tabRut.className = "py-3 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-slate-500 hover:text-slate-800";
+        tabDoc.className = "py-3 px-3 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-white text-[#007a35] shadow-xs";
+        label.textContent = "Número de Documento / Factura";
+        input.placeholder = "Ingresa Folio ej: 49406955";
+        help.textContent = "Consulta directa del estado y transacción de un folio específico.";
+        tip.textContent = "Ej: 49406955";
+        tip.onclick = () => fillDocDemo('49406955');
+        icon.innerHTML = `<i data-lucide="file-text" class="w-5 h-5"></i>`;
+      }
+      lucide.createIcons();
+    }
+
+    function changeView(view) {
+      document.getElementById('view-search').classList.toggle('hidden', view !== 'search');
+      document.getElementById('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
+      document.getElementById('view-doc-detail').classList.toggle('hidden', view !== 'doc-detail');
+      document.getElementById('btn-back').classList.toggle('hidden', view === 'search');
+
+      if (view === 'dashboard' && currentClient) {
+        renderDashboard();
+      }
+    }
+
+    function showToast(title, message, isSuccess = true) {
+      const toast = document.getElementById('toast');
+      const iconBox = document.getElementById('toast-icon-box');
+      const titleEl = document.getElementById('toast-title');
+      const textEl = document.getElementById('toast-text');
+
+      titleEl.textContent = title;
+      textEl.textContent = message;
+
+      if (isSuccess) {
+        iconBox.className = "p-2 rounded-lg bg-emerald-100 text-emerald-700";
+        iconBox.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i>`;
+      } else {
+        iconBox.className = "p-2 rounded-lg bg-amber-100 text-amber-700";
+        iconBox.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5"></i>`;
+      }
+
+      lucide.createIcons();
+      toast.classList.remove('hidden');
+
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(hideToast, 4000);
+    }
+
+    function hideToast() {
+      document.getElementById('toast').classList.add('hidden');
+    }
+
+    function executeSearch(queryVal) {
+      const clean = queryVal.trim().replace(/\./g, '').replace(/-/g, '').toLowerCase();
+      if (!clean) {
+        showToast('Atención', 'Por favor ingresa un RUT, Código o Folio válido.', false);
+        return;
+      }
+
+      if (currentSearchType === 'rut') {
+        if (DATABASE[clean]) {
+          currentClient = DATABASE[clean];
+          selectedPendingIds = [];
+          changeView('dashboard');
+          showToast('Búsqueda Exitosa', `Cliente: ${currentClient.name}`, true);
+        } else {
+          showToast('No Encontrado', 'RUT no registrado. Prueba con "17786044-1" o "77393795-8".', false);
+        }
+      } else {
+        // Búsqueda por folio de documento
+        let matchDoc = null;
+        let matchTx = null;
+
+        for (const [key, client] of Object.entries(DATABASE)) {
+          for (const tx of client.transactions) {
+            const item = tx.items.find(i => (i.docNum && i.docNum.replace(/[^0-9]/g, '').includes(clean)) || (i.deuda && i.deuda.includes(clean)));
+            if (item) {
+              matchDoc = item;
+              matchTx = tx;
+              currentClient = client;
+              break;
+            }
+          }
+          if (matchDoc) break;
+
+          const pendingItem = client.pending.find(p => p.id.includes(clean) || p.desc.includes(clean));
+          if (pendingItem) {
+            matchDoc = {
+              docNum: pendingItem.id,
+              total: pendingItem.amount,
+              venc: pendingItem.venc,
+              isPending: true
+            };
+            currentClient = client;
+            break;
+          }
+        }
+
+        if (matchDoc) {
+          document.getElementById('doc-view-title').textContent = `Factura Nº ${matchDoc.docNum || clean}`;
+          document.getElementById('doc-view-monto').textContent = formatCLP(matchDoc.pagado || matchDoc.total);
+          document.getElementById('doc-view-venc').textContent = matchDoc.venc;
+
+          const badge = document.getElementById('doc-view-badge');
+          const paidBox = document.getElementById('doc-view-paid-box');
+
+          if (matchDoc.isPending) {
+            badge.textContent = 'PENDIENTE';
+            badge.className = "text-xs font-black px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-300 border border-rose-500/30";
+            paidBox.classList.add('hidden');
+          } else {
+            badge.textContent = 'PAGADA';
+            badge.className = "text-xs font-black px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+            paidBox.classList.remove('hidden');
+            document.getElementById('doc-view-tx').textContent = matchTx ? matchTx.id : '20260924135612312C779728';
+          }
+
+          changeView('doc-detail');
+          showToast('Documento Ubicado', `Folio ${matchDoc.docNum || clean}`, true);
+        } else {
+          showToast('No Encontrado', 'Folio no encontrado. Prueba con el documento "49406955".', false);
+        }
+      }
+    }
+
+    function handleSearch(event) {
+      event.preventDefault();
+      const input = document.getElementById('search-input');
+      executeSearch(input.value);
+    }
+
+    function fillQuickDemo(rutVal) {
+      setActiveTab('rut');
+      const input = document.getElementById('search-input');
+      input.value = rutVal;
+      handleInputChange(input);
+      executeSearch(rutVal);
+    }
+
+    function fillDocDemo(folioVal) {
+      setActiveTab('document');
+      const input = document.getElementById('search-input');
+      input.value = folioVal;
+      handleInputChange(input);
+      executeSearch(folioVal);
+    }
+
+    function renderDashboard() {
+      if (!currentClient) return;
+
+      // Actualizar datos del cliente
+      document.getElementById('client-name').textContent = currentClient.name;
+      document.getElementById('client-rut').textContent = currentClient.rut;
+      document.getElementById('client-remote-id').textContent = currentClient.remoteId;
+      document.getElementById('client-email').textContent = currentClient.email;
+
+      // Actualizar contadores
+      document.getElementById('badge-count-paid').textContent = currentClient.transactions.length;
+      document.getElementById('badge-count-pending').textContent = currentClient.pending.length;
+
+      // Renderizar tabla desktop de pagos
+      const desktopTbody = document.getElementById('desktop-paid-tbody');
+      desktopTbody.innerHTML = currentClient.transactions.map(tx => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-4 px-6 font-mono-code font-bold text-slate-800">${tx.id}</td>
+          <td class="py-4 px-6 text-slate-600 font-semibold">${tx.date}</td>
+          <td class="py-4 px-6 font-black text-slate-900">${formatCLP(tx.amount)}</td>
+          <td class="py-4 px-6"><span class="bg-emerald-50 text-emerald-800 font-bold px-2.5 py-1 rounded-lg border border-emerald-200/60">${tx.gateway}</span></td>
+          <td class="py-4 px-6 font-semibold text-slate-700">${tx.method}</td>
+          <td class="py-4 px-6 text-center font-black text-emerald-700">${tx.itemsCount || tx.items.length} doc(s)</td>
+          <td class="py-4 px-6 text-right">
+            <button onclick="openTxSheet('${tx.id}')" class="bg-[#007a35] hover:bg-[#00632b] text-white text-xs font-bold px-3 py-1.5 rounded-xl transition-all shadow-xs inline-flex items-center gap-1.5">
+              <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+              <span>Ver detalle</span>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+
+      // Renderizar cards mobile de pagos (Evita desborde de columnas)
+      const mobilePaid = document.getElementById('mobile-paid-cards');
+      mobilePaid.innerHTML = currentClient.transactions.map(tx => `
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-mono-code font-bold text-slate-400 block">${tx.id}</span>
+              <p class="text-xs text-slate-500 font-medium">${tx.date} • Medio: <strong class="text-slate-800">${tx.gateway}</strong></p>
+            </div>
+            <span class="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded-md">Conciliado</span>
+          </div>
+          <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+            <div>
+              <p class="text-[10px] uppercase font-bold text-slate-400">Total Transacción</p>
+              <p class="text-base font-black text-slate-900">${formatCLP(tx.amount)}</p>
+            </div>
+            <button onclick="openTxSheet('${tx.id}')" class="bg-[#007a35] hover:bg-[#00632b] text-white text-xs font-bold px-3 py-2 rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+              <span>${tx.itemsCount || tx.items.length} Docs Rebajados</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+
+      // Renderizar facturas pendientes
+      renderPendingDocuments(currentClient.pending);
+      switchSectionTab('paid');
+      lucide.createIcons();
+    }
+
+    function switchSectionTab(tab) {
+      const isPaid = tab === 'paid';
+      document.getElementById('section-paid-container').classList.toggle('hidden', !isPaid);
+      document.getElementById('section-pending-container').classList.toggle('hidden', isPaid);
+
+      const subtabPaid = document.getElementById('subtab-paid');
+      const subtabPending = document.getElementById('subtab-pending');
+
+      if (isPaid) {
+        subtabPaid.className = "flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-[#007a35] shadow-xs";
+        subtabPending.className = "flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900";
+      } else {
+        subtabPaid.className = "flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900";
+        subtabPending.className = "flex-1 py-3 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-white text-rose-700 shadow-xs";
+      }
+    }
+
+    // === GESTIÓN DEL MODAL CENTRADO (DESKTOP & MOBILE) ===
+    function openTxSheet(txId) {
+      const tx = currentClient.transactions.find(t => t.id === txId);
+      if (!tx) return;
+
+      currentTxInSheet = tx;
+      document.getElementById('sheet-tx-id').textContent = `ID: ${tx.id}`;
+      document.getElementById('sheet-total-amount').textContent = formatCLP(tx.amount);
+      document.getElementById('sheet-meta').textContent = `${tx.gateway} • ${tx.date}`;
+
+      const container = document.getElementById('sheet-items-container');
+      
+      container.innerHTML = tx.items.map(item => `
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/80 hover:border-emerald-200 transition-all">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-black text-slate-900">${item.account || 'Documento'}</span>
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                  ${item.deuda || item.docNum || 'Folio'}
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5">${item.concept} • Vence: <strong class="text-slate-700">${item.venc}</strong></p>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-black text-emerald-700 block">${formatCLP(item.pagado)}</span>
+              <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Saldado</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Mostrar Modal Centrado en ambas resoluciones
+      const overlay = document.getElementById('tx-modal-overlay');
+      const content = document.getElementById('tx-modal-content');
+
+      overlay.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('opacity-100');
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+      });
+
+      lucide.createIcons();
+    }
+
+    function closeTxSheet() {
+      const overlay = document.getElementById('tx-modal-overlay');
+      const content = document.getElementById('tx-modal-content');
+
+      overlay.classList.remove('opacity-100');
+      overlay.classList.add('opacity-0');
+      content.classList.remove('scale-100', 'opacity-100');
+      content.classList.add('scale-95', 'opacity-0');
+
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+      }, 200);
+    }
+
+    function handleTxOverlayClick(e) {
+      if (e.target === document.getElementById('tx-modal-overlay')) {
+        closeTxSheet();
+      }
+    }
+
+    function copyCurrentTxId() {
+      if (!currentTxInSheet) return;
+      const el = document.createElement('textarea');
+      el.value = currentTxInSheet.id;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast('Copiado', 'ID de Transacción copiado al portapapeles', true);
+    }
+
+    function renderPendingDocuments(list) {
+      const emptyState = document.getElementById('pending-empty-state');
+      const deskTbody = document.getElementById('desktop-pending-tbody');
+      const mobileList = document.getElementById('mobile-pending-cards');
+      const dock = document.getElementById('pending-payment-dock');
+
+      if (!list || list.length === 0) {
+        emptyState.classList.remove('hidden');
+        deskTbody.innerHTML = '';
+        mobileList.innerHTML = '';
+        dock.classList.add('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      // Desktop
+      deskTbody.innerHTML = list.map(item => {
+        const isChecked = selectedPendingIds.includes(item.id);
+        return `
+          <tr class="hover:bg-rose-50/20 transition-colors ${isChecked ? 'bg-rose-50/40' : ''}">
+            <td class="py-4 px-6">
+              <input
+                type="checkbox"
+                ${isChecked ? 'checked' : ''}
+                onclick="togglePendingItem('${item.id}')"
+                class="rounded text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer"
+              />
+            </td>
+            <td class="py-4 px-6 font-bold text-slate-800">${item.desc}</td>
+            <td class="py-4 px-6 text-slate-600 font-medium">${item.venc}</td>
+            <td class="py-4 px-6 text-right font-black text-slate-900">${formatCLP(item.amount)}</td>
+            <td class="py-4 px-6 text-center">
+              <span class="bg-rose-100 text-rose-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
+                PENDIENTE
+              </span>
+            </td>
+            <td class="py-4 px-6 text-right">
+              <button onclick="paySinglePending('${item.id}')" class="bg-rose-600 hover:bg-rose-700 text-white font-extrabold px-3 py-1.5 rounded-xl text-xs transition-all shadow-xs">
+                Pagar
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Mobile
+      mobileList.innerHTML = list.map(item => {
+        const isChecked = selectedPendingIds.includes(item.id);
+        return `
+          <div class="p-4 flex items-center justify-between gap-3 ${isChecked ? 'bg-rose-50/50' : 'bg-white'}" onclick="togglePendingItem('${item.id}')">
+            <div class="flex items-center gap-3">
+              <input
+                type="checkbox"
+                ${isChecked ? 'checked' : ''}
+                class="rounded text-rose-600 focus:ring-rose-500 w-5 h-5 cursor-pointer"
+                onclick="event.stopPropagation(); togglePendingItem('${item.id}')"
+              />
+              <div>
+                <p class="text-xs font-extrabold text-slate-900">${item.desc}</p>
+                <p class="text-[11px] text-slate-400">Vence: ${item.venc}</p>
+              </div>
+            </div>
+
+            <div class="text-right">
+              <p class="text-sm font-black text-rose-700">${formatCLP(item.amount)}</p>
+              <span class="text-[9px] font-extrabold text-rose-600 uppercase">Por liquidar</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      updatePaymentDock();
+    }
+
+    function handlePendingSearch(val) {
+      if (!currentClient || !currentClient.pending) return;
+      const q = val.toLowerCase().trim();
+      const filtered = currentClient.pending.filter(p => p.id.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q));
+      renderPendingDocuments(filtered);
+    }
+
+    function togglePendingItem(id) {
+      const idx = selectedPendingIds.indexOf(id);
+      if (idx > -1) {
+        selectedPendingIds.splice(idx, 1);
+      } else {
+        selectedPendingIds.push(id);
+      }
+      renderPendingDocuments(currentClient.pending);
+    }
+
+    function toggleAllPendingSelection() {
+      if (selectedPendingIds.length === currentClient.pending.length) {
+        selectedPendingIds = [];
+      } else {
+        selectedPendingIds = currentClient.pending.map(p => p.id);
+      }
+      renderPendingDocuments(currentClient.pending);
+    }
+
+    function clearPendingSelection() {
+      selectedPendingIds = [];
+      renderPendingDocuments(currentClient.pending);
+    }
+
+    function updatePaymentDock() {
+      const dock = document.getElementById('pending-payment-dock');
+      if (selectedPendingIds.length > 0) {
+        dock.classList.remove('hidden');
+        document.getElementById('dock-selected-count').textContent = selectedPendingIds.length;
+        const total = currentClient.pending
+          .filter(p => selectedPendingIds.includes(p.id))
+          .reduce((sum, item) => sum + item.amount, 0);
+        document.getElementById('dock-selected-amount').textContent = formatCLP(total);
+      } else {
+        dock.classList.add('hidden');
+      }
+    }
+
+    function paySinglePending(id) {
+      selectedPendingIds = [id];
+      openPaymentModal();
+    }
+
+    // === MODAL DE PAGO ===
+    function openPaymentModal() {
+      const total = currentClient.pending
+        .filter(p => selectedPendingIds.includes(p.id))
+        .reduce((sum, item) => sum + item.amount, 0);
+
+      document.getElementById('modal-client-name').textContent = currentClient.name;
+      document.getElementById('modal-client-rut').textContent = currentClient.rut;
+      document.getElementById('modal-pay-amount').textContent = formatCLP(total);
+
+      document.getElementById('payment-modal').classList.remove('hidden');
+    }
+
+    function closePaymentModal() {
+      document.getElementById('payment-modal').classList.add('hidden');
+    }
+
+    function executePaymentProcess() {
+      closePaymentModal();
+      showToast('Pago Recibido', 'Transacción procesada correctamente por UPAGO.', true);
+      clearPendingSelection();
+    }
+
+    function downloadExcelMock() {
+      showToast('Descarga iniciada', 'Se está generando el archivo Excel con las transacciones.', true);
+    }
+
+    // Cerrar modales con tecla ESC
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeTxSheet();
+        closePaymentModal();
+      }
+    });
+
+    // Inicializar íconos al cargar
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
